@@ -11,13 +11,40 @@ dependencies = [
     "check-shapes (>=1.1.1,<2.0.0)",
     "torch (==2.2.0)",
     "numpy (>=2.2.3,<3.0.0)",
-    "pandas (>=2.2.3,<3.0.0)"
+    "pandas (>=2.2.3,<3.0.0)",
+    "ruff (>=0.9.10,<0.10.0)",
+    "pre-commit (>=4.1.0,<5.0.0)"
 ]
 
 [tool.poetry]
 packages = [{include = "src"}]
 
 
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.9.10"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "N",  # PEP8 naming convetions
+    "D"  # pydocstyle
+]
+ignore = [
+    "C901",  # too complex
+    "W191",  # indentation contains tabs
+    "D401",  # imperative mood
+    "N803", # lower case argument name
+    "N806", # lower case variable name
+]
