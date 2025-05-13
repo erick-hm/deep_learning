@@ -13,7 +13,11 @@ dependencies = [
     "numpy (>=2.2.3,<3.0.0)",
     "pandas (>=2.2.3,<3.0.0)",
     "ruff (>=0.9.10,<0.10.0)",
-    "pre-commit (>=4.1.0,<5.0.0)"
+    "pre-commit (>=4.1.0,<5.0.0)",
+    "ipykernel (>=6.29.5,<7.0.0)",
+    "matplotlib (>=3.10.1,<4.0.0)",
+    "tqdm (>=4.67.1,<5.0.0)",
+    "pydantic (>=2.11.3,<3.0.0)"
 ]
 
 [tool.poetry]
@@ -47,4 +51,10 @@ ignore = [
     "D401",  # imperative mood
     "N803", # lower case argument name
     "N806", # lower case variable name
+    "D100", # docstring in public module
+    "D205", # blank line after description
+    "D107", # docstring for class init
+    "N812", # lowercase imports
+    "D415", # closing punctuation
+    "D400", # add period
 ]
