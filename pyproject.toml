@@ -21,7 +21,12 @@ dependencies = [
 ]
 
 [tool.poetry]
-packages = [{include = "src"}]
+packages = [
+    {include = "activations", from="src"},
+    {include = "losses", from="src"},
+    {include = "autoencoders", from="src"},
+    {include = "transformers", from="src"},
+]
 
 
 [tool.poetry.group.dev.dependencies]

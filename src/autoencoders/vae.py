@@ -198,7 +198,7 @@ class VAEModel(torch.nn.Module):
     """A wrapper class for the VAE class that implements:
     - fit method, to fit to training data
     - predict methods, to predict on new data
-    - a method to generate new data samples
+    - a method to generate new data samples.
 
     A variational autoencoder class that learns a low dimensional representation
     of the original data inputs and maps it to a standard normal prior.
