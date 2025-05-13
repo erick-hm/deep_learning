@@ -1,4 +1,3 @@
-
 import torch
 from torch.nn import Linear
 from torch.utils.data import DataLoader
@@ -227,29 +226,55 @@ class VAEModel(torch.nn.Module):
     activation: Optional,
         An activation function to use in the network. If None is passed, it defaults to
         a SiLU activation.
-
     """
 
-    def __init__(self, encoder_shape: tuple[int], decoder_shape: tuple[int], hidden_dim: int, activation=None):
+    def __init__(self, encoder_shape: tuple[int], decoder_shape: tuple[int], hidden_dim: int, activation=None) -> None:
         super().__init__()
         self.model = VAE(encoder_shape, decoder_shape, hidden_dim, activation)
 
     def fit(
         self,
         loss: VAELoss,
-        optimizer: torch.optim.SGD,
+        optimizer: torch.optim.Optimizer,
         epochs: int,
         train_loader: DataLoader,
         val_loader: DataLoader | None = None,
-    ):
+    ) -> None:
+        """Fit the model to training data.
+
+        Params
+        ------
+        loss: VAELoss,
+            The loss function to use.
+
+        optimiser: torch.optim.Optimizer,
+            The optimizer to use for weights tuning.
+
+        epochs: int,
+            The number of epochs to train for.
+
+        train_loader: DataLoader,
+            The data to train on.
+
+        val_loader: DataLoader,
+            The validation data to validate against during the training process.
+
+        Returns
+        -------
+        None
+
+        """
+
         def validation_loss(val_loader, loss_fn):
             running_vloss = 0
             self.model.eval()
             # disable gradients
             with torch.no_grad():
-                for idx, vdata in enumerate(val_loader):
+                for _idx, vdata in enumerate(val_loader):
                     input, target = vdata
+
                     X_hat, mean, log_var = self.model(input)
+
                     loss_ = loss_fn(X_hat, target, mean, log_var)
                     running_vloss += loss_.item()
 
@@ -259,9 +284,9 @@ class VAEModel(torch.nn.Module):
         for epoch in range(epochs):
             self.model.train(True)
             running_loss = 0
-            last_loss = 0
+
             # loop over training samples
-            for idx, data in enumerate(train_loader):
+            for _idx, data in enumerate(train_loader):
                 input, target = data
 
                 # zero the gradients
@@ -289,11 +314,37 @@ class VAEModel(torch.nn.Module):
             print(f"Epoch {epoch} training loss: {round(running_loss, 4)} and validation loss: {round(val_loss, 4)}")
             print()
 
-    def predict(self, input: torch.Tensor):
+    def predict(self, input: torch.Tensor) -> torch.Tensor:
+        """Predict the output of new data.
+
+        Params
+        ------
+        input: torch.Tensor,
+            The input data to predict.
+
+        Returns
+        -------
+        torch.Tensor,
+            The reconstructed data.
+
+        """
         self.model.eval()
         return self.model(input)
 
-    def predict_dataset(self, input: DataLoader):
+    def predict_dataset(self, input: DataLoader) -> torch.Tensor:
+        """Predict the output of new data stored in a data loader.
+
+        Params
+        ------
+        input: DataLoader,
+            The input data to predict.
+
+        Returns
+        -------
+        torch.Tensor,
+            The reconstructed data.
+
+        """
         self.model.eval()
         all_reconstructions = []
         all_means = []
@@ -301,7 +352,8 @@ class VAEModel(torch.nn.Module):
 
         with torch.no_grad():
             for batch in input:
-                X, _ = batch  # ignoring targets here, adapt if needed
+                # ignoring targets
+                X, _ = batch
                 X_hat, mean, log_var = self.model(X)
 
                 all_reconstructions.append(X_hat)
@@ -314,10 +366,38 @@ class VAEModel(torch.nn.Module):
 
         return X_hat, mean, log_var
 
-    def sample_prior(self, num_samples: int):
+    def sample_prior(self, num_samples: int) -> torch.Tensor:
+        """Sample latent vectors from the standard normal prior.
+
+        Params
+        ------
+        num_samples: int,
+            The number of samples to generate.
+
+        Returns
+        -------
+        torch.Tensor,
+            Samples generated.
+
+        """
         return torch.randn(num_samples, self.model.hidden_dim)
 
-    def generate_samples(self, num_samples: int):
+    def generate_samples(self, num_samples: int) -> torch.Tensor:
+        """Generate synthetic data samples by sampling from the standard
+        normal prior and reconstructing the latent representation to a
+        data point.
+
+        Params
+        ------
+        num_samples: int,
+            The number of samples to generate.
+
+        Returns
+        -------
+        torch.Tensor,
+            The generated synthetic data.
+
+        """
         sampled_latent = self.sample_prior(num_samples)
 
         return self.model.decoder(sampled_latent)
