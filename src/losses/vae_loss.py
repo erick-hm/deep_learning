@@ -69,7 +69,7 @@ class VAELoss(torch.nn.Module):
         kl_div = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp(), dim=1)
 
         # Combine the loss
-        kl_weight = min(self.current_epoch / self.warmup_epochs, self.kl_weight)
+        kl_weight = self.kl_weight * min(self.current_epoch / self.warmup_epochs, 1.0)
 
         loss = recon_loss + (kl_weight * kl_div)
 
