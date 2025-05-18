@@ -6,11 +6,13 @@ import torch.nn.functional as F
 
 
 class VAELoss(torch.nn.Module):
-    """Implements a VAE loss using MSE and KL-divergence, assuming
+    """Implements a VAE loss using MSE/L1 loss and KL-divergence, assuming
     continuous valued input data and a Gaussian prior/posterior.
 
     Institutes KL-annealing to gradually increase the importance of
     the KL divergence and prevent failing to minimise reconstruction error.
+
+    The KL weight can be set for use as a beta-VAE.
 
     Params
     ------
@@ -31,11 +33,16 @@ class VAELoss(torch.nn.Module):
         kl_weight: float = 1.0,
         warmup_epochs: int = 10,
         reduction: Literal["mean", "sum", "none"] = "mean",
+        loss_type: Literal["mse", "l1"] = "mse",
     ):
         super().__init__()
         self.kl_weight = kl_weight
         self.warmup_epochs = warmup_epochs  # added for annealing of the KL loss term
         self.current_epoch = 0
+
+        if loss_type not in ("mse", "l1"):
+            raise ValueError("Loss type must be 'mse', 'l1'")
+        self.loss_type = loss_type
 
         if reduction not in ("mean", "sum", "none"):
             raise ValueError("reduction must be 'mean', 'sum' or 'none'")
@@ -61,8 +68,12 @@ class VAELoss(torch.nn.Module):
         log_var: torch.Tensor,
             The latent log-variances predicted by the encoder.
         """
-        # Reconstruction loss (MSE)
-        recon_loss = F.mse_loss(X_hat, X, reduction="none")
+        if self.loss_type == "mse":
+            # Reconstruction loss (MSE)
+            recon_loss = F.mse_loss(X_hat, X, reduction="none")
+        if self.loss_type == "l1":
+            recon_loss = F.l1_loss(X_hat, X, reduction="none")
+
         recon_loss = recon_loss.sum(dim=1)  # sum over features per sample
 
         # KL divergence loss assuming multivariate Gaussian prior and posterior
