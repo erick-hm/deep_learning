@@ -142,7 +142,13 @@ class VAE(torch.nn.Module):
         a SiLU activation.
     """
 
-    def __init__(self, encoder_shape: tuple[int], decoder_shape: tuple[int], hidden_dim: int, activation=None):
+    def __init__(
+        self,
+        encoder_shape: tuple[int],
+        decoder_shape: tuple[int],
+        hidden_dim: int,
+        activation=None,
+    ):
         super().__init__()
         self.encoder = VariationalEncoder(encoder_shape, hidden_dim, activation=activation)
         self.decoder = VariationalDecoder(decoder_shape, hidden_dim, activation=activation)

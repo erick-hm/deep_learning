@@ -67,6 +67,7 @@ def diagnose_posterior_collapse(
         plt.grid(True)
         plt.show()
     elif latent_dim == 2:
+        # TODO: add colour
         plt.figure(figsize=(6, 6))
         plt.scatter(mu_all[:, 0].cpu().squeeze().tolist(), mu_all[:, 1].cpu().squeeze().tolist(), alpha=0.5)
         plt.title("Latent Mean Distribution")
