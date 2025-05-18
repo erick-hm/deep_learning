@@ -26,6 +26,12 @@ class VAELoss(torch.nn.Module):
 
     reduction: Literal['mean','sum','none'],
         The method for aggregating the loss.
+
+    dim_agg: Literal["mean", "sum"],
+        The aggregation function to use across the loss for each output dimension.
+
+    loss_type: Literal["mse", "l1"],
+        Whether to use MSE or L1 loss for the reconstruction error term.
     """
 
     def __init__(
@@ -33,6 +39,7 @@ class VAELoss(torch.nn.Module):
         kl_weight: float = 1.0,
         warmup_epochs: int = 10,
         reduction: Literal["mean", "sum", "none"] = "mean",
+        dim_agg: Literal["mean", "sum"] = "mean",
         loss_type: Literal["mse", "l1"] = "mse",
     ):
         super().__init__()
@@ -43,6 +50,10 @@ class VAELoss(torch.nn.Module):
         if loss_type not in ("mse", "l1"):
             raise ValueError("Loss type must be 'mse', 'l1'")
         self.loss_type = loss_type
+
+        if dim_agg not in ("mean", "sum"):
+            raise ValueError("dim_agg must be 'mean' or 'sum'")
+        self.dim_agg = dim_agg
 
         if reduction not in ("mean", "sum", "none"):
             raise ValueError("reduction must be 'mean', 'sum' or 'none'")
@@ -74,7 +85,11 @@ class VAELoss(torch.nn.Module):
         if self.loss_type == "l1":
             recon_loss = F.l1_loss(X_hat, X, reduction="none")
 
-        recon_loss = recon_loss.sum(dim=1)  # sum over features per sample
+        if self.dim_agg == "sum":
+            # sum over features per sample
+            recon_loss = recon_loss.sum(dim=1)
+        elif self.dim_agg == "mean":
+            recon_loss = recon_loss.mean(dim=1)
 
         # KL divergence loss assuming multivariate Gaussian prior and posterior
         kl_div = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp(), dim=1)
