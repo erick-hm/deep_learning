@@ -95,7 +95,8 @@ def diagnose_posterior_collapse(
         zip(
             axes,
             [x.cpu(), x_hat_encoded.cpu(), x_hat_random.cpu()],
-            ["Original Input", "Reconstruction (Encoded z)", "Reconstruction (Random z)"], strict=False,
+            ["Original Input", "Reconstruction (Encoded z)", "Reconstruction (Random z)"],
+            strict=False,
         )
     ):
         ax.scatter(data[:, 0].tolist(), data[:, 1].tolist())
