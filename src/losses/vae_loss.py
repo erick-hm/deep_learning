@@ -20,6 +20,10 @@ class VAELoss(torch.nn.Module):
         Sets the relative importance of the KL-divergence compared to the
         reconstruction error. The beta from beta-VAE
 
+    l1_lambda: float = 0,
+        Apply an L1 loss to the latent vector to encourage sparsity in the
+        representation.
+
     warmup_epochs: int = 10,
         Sets the rate of annealing of the KL-divergence. Higher values indicate
         a slower ramp-up of the KL divergence contribution to the loss.
@@ -37,6 +41,7 @@ class VAELoss(torch.nn.Module):
     def __init__(
         self,
         beta: float = 1.0,
+        l1_lambda: float = 0.0,
         warmup_epochs: int = 10,
         reduction: Literal["mean", "sum", "none"] = "mean",
         dim_agg: Literal["mean", "sum"] = "mean",
@@ -46,6 +51,7 @@ class VAELoss(torch.nn.Module):
         self.beta = beta
         self.warmup_epochs = warmup_epochs  # added for annealing of the KL loss term
         self.current_epoch = 0
+        self.l1_lambda = l1_lambda
 
         if loss_type not in ("mse", "l1"):
             raise ValueError("Loss type must be 'mse', 'l1'")
@@ -59,7 +65,14 @@ class VAELoss(torch.nn.Module):
             raise ValueError("reduction must be 'mean', 'sum' or 'none'")
         self.reduction = reduction
 
-    def forward(self, X_hat: torch.Tensor, X: torch.Tensor, mean: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        X_hat: torch.Tensor,
+        X: torch.Tensor,
+        mean: torch.Tensor,
+        log_var: torch.Tensor,
+        z: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         """Calculate the loss as the reconstruction error plus the kullback-leibler
         divergence (relative entropy).
 
@@ -78,7 +91,19 @@ class VAELoss(torch.nn.Module):
 
         log_var: torch.Tensor,
             The latent log-variances predicted by the encoder.
+
+        z: torch.Tensor | None,
+            The latent vector samples. Only pass when using l1_loss.
         """
+        latent_l1_loss = 0
+        if self.l1_lambda == 0:
+            if z is None:
+                msg = "Must pass z if using a non-zero L1 lambda term."
+                raise ValueError(msg)
+        else:
+            # calculate the l1 loss
+            latent_l1_loss = self.l1_lambda * z.abs().sum(dim=1)
+
         if self.loss_type == "mse":
             # Reconstruction loss (MSE)
             recon_loss = F.mse_loss(X_hat, X, reduction="none")
@@ -94,10 +119,11 @@ class VAELoss(torch.nn.Module):
         # KL divergence loss assuming multivariate Gaussian prior and posterior
         kl_div = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp(), dim=1)
 
-        # Combine the loss
+        # anneal the KL weighting
         beta = self.beta * min(self.current_epoch / self.warmup_epochs, 1.0)
 
-        loss = recon_loss + (beta * kl_div)
+        # Combine the losses
+        loss = recon_loss + (beta * kl_div) + latent_l1_loss
 
         logging.debug("kl div", round(kl_div.mean().item(), 3))
         logging.debug("recon_loss", round(recon_loss.mean().item(), 3))

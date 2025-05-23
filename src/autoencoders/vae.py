@@ -210,7 +210,7 @@ class VAE(torch.nn.Module):
 
         X_hat = self.decoder(z)
 
-        return X_hat, mean, log_var
+        return X_hat, mean, log_var, z
 
 
 class VAEModel(torch.nn.Module):
@@ -303,9 +303,12 @@ class VAEModel(torch.nn.Module):
                 for _idx, vdata in enumerate(val_loader):
                     input, target = vdata
 
-                    X_hat, mean, log_var = self.model(input)
+                    X_hat, mean, log_var, z = self.model(input)
 
-                    loss_ = loss_fn(X_hat, target, mean, log_var)
+                    if hasattr(loss_fn, "l1_lambda"):
+                        loss_ = loss_fn(X_hat, target, mean, log_var, z)
+                    else:
+                        loss_ = loss_fn(X_hat, target, mean, log_var)
                     running_vloss += loss_.item()
 
             return running_vloss
@@ -323,10 +326,14 @@ class VAEModel(torch.nn.Module):
                 optimizer.zero_grad()
 
                 # predict
-                X_hat, mean, log_var = self.model(input)
+                X_hat, mean, log_var, z = self.model(input)
 
                 # calculate loss and gradients
-                loss_ = loss(X_hat, target, mean, log_var)
+                if hasattr(loss, "l1_lambda"):
+                    loss_ = loss(X_hat, target, mean, log_var, z)
+                else:
+                    loss_ = loss(X_hat, target, mean, log_var)
+
                 loss_.backward()
 
                 # adjust weights
@@ -384,7 +391,7 @@ class VAEModel(torch.nn.Module):
             for batch in input:
                 # ignoring targets
                 X, _ = batch
-                X_hat, mean, log_var = self.model(X)
+                X_hat, mean, log_var, z = self.model(X)
 
                 all_reconstructions.append(X_hat)
                 all_means.append(mean)
