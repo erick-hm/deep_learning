@@ -16,9 +16,9 @@ class VAELoss(torch.nn.Module):
 
     Params
     ------
-    kl_weight: float = 1.0,
+    beta: float = 1.0,
         Sets the relative importance of the KL-divergence compared to the
-        reconstruction error.
+        reconstruction error. The beta from beta-VAE
 
     warmup_epochs: int = 10,
         Sets the rate of annealing of the KL-divergence. Higher values indicate
@@ -36,14 +36,14 @@ class VAELoss(torch.nn.Module):
 
     def __init__(
         self,
-        kl_weight: float = 1.0,
+        beta: float = 1.0,
         warmup_epochs: int = 10,
         reduction: Literal["mean", "sum", "none"] = "mean",
         dim_agg: Literal["mean", "sum"] = "mean",
         loss_type: Literal["mse", "l1"] = "mse",
     ):
         super().__init__()
-        self.kl_weight = kl_weight
+        self.beta = beta
         self.warmup_epochs = warmup_epochs  # added for annealing of the KL loss term
         self.current_epoch = 0
 
@@ -95,9 +95,9 @@ class VAELoss(torch.nn.Module):
         kl_div = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp(), dim=1)
 
         # Combine the loss
-        kl_weight = self.kl_weight * min(self.current_epoch / self.warmup_epochs, 1.0)
+        beta = self.beta * min(self.current_epoch / self.warmup_epochs, 1.0)
 
-        loss = recon_loss + (kl_weight * kl_div)
+        loss = recon_loss + (beta * kl_div)
 
         logging.debug("kl div", round(kl_div.mean().item(), 3))
         logging.debug("recon_loss", round(recon_loss.mean().item(), 3))
