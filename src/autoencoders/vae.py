@@ -1,3 +1,5 @@
+from typing import Callable
+
 import torch
 from torch.nn import Linear
 from torch.utils.data import DataLoader
@@ -29,7 +31,7 @@ class VariationalEncoder(torch.nn.Module):
         a SiLU activation.
     """
 
-    def __init__(self, encoder_shape: tuple[int], hidden_dim: int, activation=None):
+    def __init__(self, encoder_shape: tuple[int], hidden_dim: int, activation: torch.nn.Module | None = None):
         super().__init__()
 
         # define the encoder layers
@@ -84,7 +86,7 @@ class VariationalDecoder(torch.nn.Module):
         a SiLU activation.
     """
 
-    def __init__(self, decoder_shape: tuple[int], hidden_dim: int, activation=None):
+    def __init__(self, decoder_shape: tuple[int], hidden_dim: int, activation: torch.nn.Module | None = None):
         super().__init__()
 
         # define the network shape
@@ -121,6 +123,7 @@ class VAE(torch.nn.Module):
     - encoder/decoder shape and size
     - latent dimension
     - activation function
+    - latent encoding transformation
 
     Params
     ------
@@ -140,6 +143,9 @@ class VAE(torch.nn.Module):
     activation: Optional,
         An activation function to use in the network. If None is passed, it defaults to
         a SiLU activation.
+
+    latent_function: Callable[[torch.Tensor], torch.Tensor] | None,
+        A function on the latent representation to transform the encoding.
     """
 
     def __init__(
@@ -147,12 +153,14 @@ class VAE(torch.nn.Module):
         encoder_shape: tuple[int],
         decoder_shape: tuple[int],
         hidden_dim: int,
-        activation=None,
+        activation: torch.nn.Module | None = None,
+        latent_function: Callable[[torch.Tensor], torch.Tensor] | None = None,
     ):
         super().__init__()
         self.encoder = VariationalEncoder(encoder_shape, hidden_dim, activation=activation)
         self.decoder = VariationalDecoder(decoder_shape, hidden_dim, activation=activation)
         self.hidden_dim = hidden_dim
+        self.latent_fn = latent_function
 
     def reparametrisation(self, mean: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
         """Reparametrise the latent vector using a standard normal
@@ -195,6 +203,11 @@ class VAE(torch.nn.Module):
         """
         mean, log_var = self.encoder(X)
         z = self.reparametrisation(mean, log_var)
+
+        # apply an optional encoding function
+        if self.latent_fn:
+            z = self.latent_fn(z)
+
         X_hat = self.decoder(z)
 
         return X_hat, mean, log_var
@@ -213,6 +226,7 @@ class VAEModel(torch.nn.Module):
     - encoder/decoder shape and size
     - latent dimension
     - activation function
+    - latent encoding transformation
 
     Params
     ------
@@ -232,11 +246,21 @@ class VAEModel(torch.nn.Module):
     activation: Optional,
         An activation function to use in the network. If None is passed, it defaults to
         a SiLU activation.
+
+    latent_function: Callable[[torch.Tensor], torch.Tensor] | None,
+        A function on the latent representation to transform the encoding.
     """
 
-    def __init__(self, encoder_shape: tuple[int], decoder_shape: tuple[int], hidden_dim: int, activation=None) -> None:
+    def __init__(
+        self,
+        encoder_shape: tuple[int],
+        decoder_shape: tuple[int],
+        hidden_dim: int,
+        activation: torch.nn.Module | None = None,
+        latent_function: Callable[[torch.Tensor], torch.Tensor] | None = None,
+    ) -> None:
         super().__init__()
-        self.model = VAE(encoder_shape, decoder_shape, hidden_dim, activation)
+        self.model = VAE(encoder_shape, decoder_shape, hidden_dim, activation, latent_function)
 
     def fit(
         self,
