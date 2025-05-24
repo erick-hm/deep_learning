@@ -9,18 +9,19 @@ def gaussian_kernel(z1: torch.Tensor, z2: torch.Tensor, sigma: float = 1) -> tor
     Params
     ------
     z1: torch.Tensor,
-        The first batch of latent vectors.
+        The first batch of latent vectors. Tensor of shape [N, features].
 
     z2: torch.Tensor,
-        The second batch of latent vectors.
+        The second batch of latent vectors. Tensor of shape [M, features].
 
     sigma: float,
         The scaling factor, equivalenet to the standard deviation in a Gaussian.
+        Must be greater than 0.
 
     Returns
     -------
     torch.Tensor,
-        The pairwise Gaussian kernel matrix.
+        The pairwise Gaussian kernel matrix of shape [N, M].
 
     """
     assert sigma > 0, "Sigma must be a positive valued float."
