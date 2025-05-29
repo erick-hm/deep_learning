@@ -21,7 +21,8 @@ def gaussian_kernel(z1: torch.Tensor, z2: torch.Tensor, sigma: float = 1) -> tor
     Returns
     -------
     torch.Tensor,
-        The pairwise Gaussian kernel matrix of shape [N, M].
+        The pairwise Gaussian kernel matrix of shape [N, M], where each
+        element (i,j) contains exp(-||z1_i - z2_j||^2 / (2*sigma^2)).
 
     """
     assert sigma > 0, "Sigma must be a positive valued float."
