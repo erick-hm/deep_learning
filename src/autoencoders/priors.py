@@ -30,6 +30,7 @@ class GaussianPrior(Prior):
 
     mean: float
     sigma: PositiveFloat
+    as_torch_params: bool = False
 
     def sample(self, num_samples: int) -> torch.Tensor:
         """Generate samples from a Gaussian distribution with specified
@@ -49,6 +50,15 @@ class GaussianPrior(Prior):
         samples = torch.normal(self.mean, self.sigma, num_samples)
 
         return samples
+
+    @model_validator(mode="after")
+    def validate_torch_params(self):
+        """Conditionally convert class parameters to Pytorch parameters."""
+        if self.as_torch_params:
+            self.mean = torch.nn.Parameter(torch.Tensor(self.mean))
+            self.sigma = torch.nn.Parameter(torch.Tensor(self.sigma))
+
+        return self
 
 
 class GaussianMixturePrior(Prior):
