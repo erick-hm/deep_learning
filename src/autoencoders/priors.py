@@ -69,6 +69,7 @@ class GaussianMixturePrior(Prior):
     weights: list[PositiveFloat]
     means: list[float]
     sigmas: list[PositiveFloat]
+    as_torch_params: bool = False
 
     def __len__(self):
         return len(self.weights)
@@ -114,5 +115,15 @@ class GaussianMixturePrior(Prior):
         if weights_sum != 1:
             msg = "Weights array must sum to one."
             raise ValueError(msg)
+
+        return self
+
+    @model_validator(mode="after")
+    def validate_torch_params(self):
+        """Conditionally convert class parameters to Pytorch parameters."""
+        if self.as_torch_params:
+            self.weights = torch.nn.Parameter(torch.Tensor(self.weights))
+            self.means = torch.nn.Parameter(torch.Tensor(self.means))
+            self.sigmas = torch.nn.Parameter(torch.Tensor(self.sigmas))
 
         return self
