@@ -32,7 +32,7 @@ class GaussianPrior(Prior):
     sigma: PositiveFloat
     as_torch_params: bool = False
 
-    def sample(self, num_samples: int) -> torch.Tensor:
+    def sample(self, num_samples: int, latent_dim: int) -> torch.Tensor:
         """Generate samples from a Gaussian distribution with specified
         mean and standard deviation.
 
@@ -41,13 +41,16 @@ class GaussianPrior(Prior):
         num_samples: int,
             The number of samples to generate.
 
+        latent_dim: int,
+            The dimension of the latent space.
+
         Returns
         -------
         torch.Tensor,
             A pytorch tensor containing the samples.
 
         """
-        samples = torch.normal(self.mean, self.sigma, num_samples)
+        samples = torch.normal(self.mean, self.sigma, (num_samples, latent_dim))
 
         return samples
 
@@ -84,7 +87,7 @@ class GaussianMixturePrior(Prior):
     def __len__(self):
         return len(self.weights)
 
-    def sample(self, num_samples: int) -> torch.Tensor:
+    def sample(self, num_samples: int, latent_dim: int) -> torch.Tensor:
         """Generate samples from a Gaussian mixture distribution with specified
         mean and standard deviation.
 
@@ -92,6 +95,9 @@ class GaussianMixturePrior(Prior):
         ------
         num_samples: int,
             The number of samples to generate.
+
+        latent_dim: int,
+            The dimension of the latent space.
 
         Returns
         -------
@@ -103,7 +109,7 @@ class GaussianMixturePrior(Prior):
         sample_means = torch.tensor(self.means)[weights_sample_idxs]
         sample_sigmas = torch.tensor(self.sigmas)[weights_sample_idxs]
 
-        samples = torch.normal(sample_means, sample_sigmas)
+        samples = torch.normal(sample_means, sample_sigmas, (num_samples, latent_dim))
 
         return samples
 
