@@ -63,4 +63,5 @@ ignore = [
     "N812", # lowercase imports
     "D415", # closing punctuation
     "D400", # add period
+    "D105", # Missing docstring in magic method
 ]
